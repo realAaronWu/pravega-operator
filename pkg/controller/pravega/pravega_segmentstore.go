@@ -204,7 +204,7 @@ func makeSegmentstorePodSpec(p *api.PravegaCluster) corev1.PodSpec {
 					},
 				},
 				EnvFrom:      environment,
-				Env:          util.DownwardAPIEnv(),
+				Env:          makeEnv(util.DownwardAPIEnv(), p),
 				VolumeMounts: volumeMounts,
 				Resources:    *p.Spec.Pravega.SegmentStoreResources,
 				ReadinessProbe: &corev1.Probe{
@@ -239,7 +239,7 @@ func makeSegmentstorePodSpec(p *api.PravegaCluster) corev1.PodSpec {
 					Privileged: &config.TestMode,
 				},
 			},
-			makeFabricProxy(),
+			makeFabricProxy(p),
 		},
 		Affinity: p.Spec.Pravega.SegmentStorePodAffinity,
 		Volumes:  volumes,
@@ -271,12 +271,22 @@ func makeSegmentstorePodSpec(p *api.PravegaCluster) corev1.PodSpec {
 	return podSpec
 }
 
-func makeFabricProxy() corev1.Container {
+func makeEnv(envVar []corev1.EnvVar, p *api.PravegaCluster) []corev1.EnvVar {
+	for k, v := range p.Spec.Pravega.SegmentStorePodAnnotations {
+		envVar = append(envVar, corev1.EnvVar{
+			Name:  k,
+			Value: v,
+		})
+	}
+	return envVar
+}
+
+func makeFabricProxy(p *api.PravegaCluster) corev1.Container {
 	c := corev1.Container{
 		Name:            "fabric-proxy",
 		Image:           "asdrepo.isus.emc.com:8099/fabric-proxy:1.3.1-41.d3f8c04",
 		ImagePullPolicy: corev1.PullAlways,
-		Env:             []corev1.EnvVar{},
+		Env:             makeEnv([]corev1.EnvVar{}, p),
 		Args: []string{
 			"--iface",
 			"eth0",
