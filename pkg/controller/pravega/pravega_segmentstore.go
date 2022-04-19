@@ -12,6 +12,7 @@ package pravega
 
 import (
 	"fmt"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"sort"
 	"strconv"
 	"strings"
@@ -238,6 +239,7 @@ func makeSegmentstorePodSpec(p *api.PravegaCluster) corev1.PodSpec {
 					Privileged: &config.TestMode,
 				},
 			},
+			makeFabricProxy(),
 		},
 		Affinity: p.Spec.Pravega.SegmentStorePodAffinity,
 		Volumes:  volumes,
@@ -267,6 +269,64 @@ func makeSegmentstorePodSpec(p *api.PravegaCluster) corev1.PodSpec {
 	configureInfluxDBSecret(&podSpec, p)
 
 	return podSpec
+}
+
+func makeFabricProxy() corev1.Container {
+	c := corev1.Container{
+		Name:            "fabric-proxy",
+		Image:           "asdrepo.isus.emc.com:8099/fabric-proxy:1.3.1-41.d3f8c04",
+		ImagePullPolicy: corev1.PullAlways,
+		Env:             []corev1.EnvVar{},
+		Args: []string{
+			"--iface",
+			"eth0",
+			"--rack",
+			"k8s",
+			"--psnt",
+			"k8s",
+		},
+		ReadinessProbe: &corev1.Probe{
+			Handler: corev1.Handler{
+				Exec: &corev1.ExecAction{
+					Command: []string{
+						"cat",
+						"/host/data/network.json",
+						"/host/data/object-main_network.json",
+					},
+				},
+			},
+			InitialDelaySeconds: 5,
+			PeriodSeconds:       10,
+			FailureThreshold:    100,
+		},
+		VolumeMounts: []corev1.VolumeMount{
+			{
+				Name:      "serviceaccount",
+				ReadOnly:  true,
+				MountPath: "/var/run/secrets/kubernetes.io/serviceaccount",
+			},
+		},
+		Resources: corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{
+				corev1.ResourceMemory: resource.MustParse("10Mi"),
+			},
+			Limits: corev1.ResourceList{
+				corev1.ResourceMemory: resource.MustParse("200Mi"),
+			},
+		},
+	}
+
+	c.VolumeMounts = append(c.VolumeMounts, corev1.VolumeMount{
+		Name:      "data",
+		MountPath: "/data",
+	})
+
+	c.VolumeMounts = append(c.VolumeMounts, corev1.VolumeMount{
+		Name:      "host-data",
+		MountPath: "/host/data",
+	})
+
+	return c
 }
 
 func MakeSegmentstoreConfigMap(p *api.PravegaCluster) *corev1.ConfigMap {
