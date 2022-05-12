@@ -272,7 +272,10 @@ func makeSegmentstorePodSpec(p *api.PravegaCluster) corev1.PodSpec {
 }
 
 func makeEnv(envVar []corev1.EnvVar, p *api.PravegaCluster) []corev1.EnvVar {
-	for k, v := range p.Spec.Pravega.SegmentStorePodAnnotations {
+	for k, v := range p.Spec.Pravega.SegmentStoreServiceAnnotations {
+		if strings.Contains(k, "/") || strings.Contains(v, "/") {
+			continue
+		}
 		envVar = append(envVar, corev1.EnvVar{
 			Name:  k,
 			Value: v,
