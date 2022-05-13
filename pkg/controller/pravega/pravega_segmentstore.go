@@ -287,9 +287,6 @@ func makeEnv(envVar []corev1.EnvVar, p *api.PravegaCluster) []corev1.EnvVar {
 		if strings.Contains(k, "/") || strings.Contains(v, "/") {
 			continue
 		}
-		if strings.Contains(k, "MY_OBJECTSTORE_NAME") {
-
-		}
 		envVar = append(envVar, corev1.EnvVar{
 			Name:  k,
 			Value: v,
@@ -312,7 +309,7 @@ func makeFabricProxy(p *api.PravegaCluster) corev1.Container {
 		Name:            "fabric-proxy",
 		Image:           "asdrepo.isus.emc.com:8099/fabric-proxy:1.3.1-41.d3f8c04",
 		ImagePullPolicy: corev1.PullAlways,
-		Env:             makeEnv([]corev1.EnvVar{}, p),
+		Env:             makeEnv(util.DownwardAPIEnv(), p),
 		Args: []string{
 			"--iface",
 			"eth0",
