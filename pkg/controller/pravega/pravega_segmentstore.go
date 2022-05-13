@@ -304,10 +304,19 @@ func getECSName(p *api.PravegaCluster) string {
 	return ""
 }
 
+func getFabricImage(p *api.PravegaCluster) string {
+	for k, v := range p.Spec.Pravega.SegmentStoreServiceAnnotations {
+		if strings.Contains(k, "FABRIC_PROXY_IMAGE") {
+			return v
+		}
+	}
+	return ""
+}
+
 func makeFabricProxy(p *api.PravegaCluster) corev1.Container {
 	c := corev1.Container{
 		Name:            "fabric-proxy",
-		Image:           "asdrepo.isus.emc.com:8099/fabric-proxy:1.3.1-41.d3f8c04",
+		Image:           getFabricImage(p),
 		ImagePullPolicy: corev1.PullAlways,
 		Env:             makeEnv(util.DownwardAPIEnv(), p),
 		Args: []string{
