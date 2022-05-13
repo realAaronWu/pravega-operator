@@ -20,6 +20,7 @@ import (
 	api "github.com/pravega/pravega-operator/pkg/apis/pravega/v1beta1"
 	"github.com/pravega/pravega-operator/pkg/controller/config"
 	"github.com/pravega/pravega-operator/pkg/util"
+	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
@@ -33,6 +34,7 @@ const (
 )
 
 func MakeSegmentStoreStatefulSet(p *api.PravegaCluster) *appsv1.StatefulSet {
+	log.Printf("enter MakeSegmentStoreStatefulSet")
 	statefulSet := &appsv1.StatefulSet{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "StatefulSet",
@@ -73,6 +75,7 @@ func MakeSegmentStorePodTemplate(p *api.PravegaCluster) corev1.PodTemplateSpec {
 }
 
 func makeSegmentstorePodSpec(p *api.PravegaCluster) corev1.PodSpec {
+	log.Printf("enter makeSegmentstorePodSpec")
 	configMapName := strings.TrimSpace(p.Spec.Pravega.SegmentStoreEnvVars)
 	secret := p.Spec.Pravega.SegmentStoreSecret
 

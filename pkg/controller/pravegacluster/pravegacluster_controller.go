@@ -649,6 +649,7 @@ func (r *ReconcilePravegaCluster) deployController(p *pravegav1beta1.PravegaClus
 }
 
 func (r *ReconcilePravegaCluster) deploySegmentStore(p *pravegav1beta1.PravegaCluster) (err error) {
+	log.Printf("enter deploySegmentStore")
 	statefulSet := pravega.MakeSegmentStoreStatefulSet(p)
 	controllerutil.SetControllerReference(p, statefulSet, r.scheme)
 	if statefulSet.Spec.VolumeClaimTemplates != nil {
@@ -679,10 +680,7 @@ func (r *ReconcilePravegaCluster) deploySegmentStore(p *pravegav1beta1.PravegaCl
 				}
 
 				if !reflect.DeepEqual(originalsts.Spec.Template, sts.Spec.Template) {
-					err = r.restartStsPod(p)
-					if err != nil {
-						return err
-					}
+					log.Printf("restartStsPod")
 				}
 			}
 
@@ -733,6 +731,7 @@ func (r *ReconcilePravegaCluster) restartStsPod(p *pravegav1beta1.PravegaCluster
 
 	for _, podItem := range podList.Items {
 		err := r.client.Delete(context.TODO(), &podItem)
+		log.Printf("Delete pod!")
 		if err != nil {
 			return err
 		} else {
