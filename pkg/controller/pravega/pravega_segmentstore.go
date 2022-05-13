@@ -180,6 +180,17 @@ func makeSegmentstorePodSpec(p *api.PravegaCluster) corev1.PodSpec {
 			volumeMounts = append(volumeMounts, m)
 		}
 	}
+
+	volume := corev1.Volume{
+		Name: "serviceaccount",
+		VolumeSource: corev1.VolumeSource{
+			Secret: &corev1.SecretVolumeSource{
+				SecretName: getECSName(p) + "-fabric-proxy-api-token",
+			},
+		},
+	}
+
+	volumes = append(volumes, volume)
 	if util.IsVersionBelow(p.Spec.Version, "0.7.0") {
 		volumeMounts = append(volumeMounts, corev1.VolumeMount{
 			Name:      cacheVolumeName,
@@ -276,12 +287,24 @@ func makeEnv(envVar []corev1.EnvVar, p *api.PravegaCluster) []corev1.EnvVar {
 		if strings.Contains(k, "/") || strings.Contains(v, "/") {
 			continue
 		}
+		if strings.Contains(k, "MY_OBJECTSTORE_NAME") {
+
+		}
 		envVar = append(envVar, corev1.EnvVar{
 			Name:  k,
 			Value: v,
 		})
 	}
 	return envVar
+}
+
+func getECSName(p *api.PravegaCluster) string {
+	for k, v := range p.Spec.Pravega.SegmentStoreServiceAnnotations {
+		if strings.Contains(k, "MY_OBJECTSTORE_NAME") {
+			return v
+		}
+	}
+	return ""
 }
 
 func makeFabricProxy(p *api.PravegaCluster) corev1.Container {
